@@ -15,24 +15,24 @@ class Pion:
     def numero(self):
         return self._numero
     
-    def getCouleur(self):
+    def get_couleur(self):
         return self._couleur
     
-    def getNumero(self):
+    def get_numero(self):
         return self._numero
     
-    def isActif(self):
+    def is_actif(self):
         return self.actif
     
-    def isDame(self):
+    def is_dame(self):
         return self.dame
     
-    def setActif(self):
+    def set_actif(self):
         self.actif = True
 
-    def setInactif(self):
+    def set_inactif(self):
         self.actif = False
     
-    def setDame(self):
+    def set_dame(self):
         self.dame = True
     

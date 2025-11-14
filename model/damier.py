@@ -46,5 +46,4 @@ class Damier:
             self.grille[position] = None
             return True
         return False
-
     
