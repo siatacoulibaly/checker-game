@@ -34,10 +34,10 @@ class Damier:
             return "NA"
 
 
-    def move_pion(self, positionA, positionB):
-        if self.get_item(positionB) == None and isinstance(self.get_item, pion.Pion):
-            self.grille[positionB] = self.get_item(positionA)
-            self.grille[positionA] = None
+    def move_pion(self, position_a, position_b):
+        if self.get_item(position_b) == None and isinstance(self.get_item, pion.Pion):
+            self.grille[position_b] = self.get_item(position_a)
+            self.grille[position_a] = None
             return True
         return False
     

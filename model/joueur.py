@@ -24,6 +24,9 @@ class Joueur:
     def add_score(self, points):
         self.score += points
 
+    def get_score(self):
+        return self.score
+
     def set_actif(self, actif):
         self.actif = actif
 
