@@ -92,17 +92,18 @@ def is_deplacement_diagonal(damier, position_a, position_b, joueur):
                     return False
 
                 #Autoriser le mouvement si la dame elimine 1 pion de l'adversaire
-                elif is_deplacement_diagonal_eliminant(damier, position_a, position_intermediaire, joueur):
+                elif get_pion_elimine_in_deplacement_diagonal(damier, position_a, position_intermediaire, joueur):
                     return True
                 
     return False
 
 
-def is_deplacement_diagonal_eliminant(damier, position_a, position_b, joueur):
+def get_pion_elimine_in_deplacement_diagonal(damier, position_a, position_b, joueur):
     """Verifier les conditions pour qu'une dame fasse un long deplacement diagonal 
-    tout en eliminant un pion de l'adversaire"""
+    tout en eliminant un pion de l'adversaire | Retourner le pion elimine"""
     
     pion = damier.get_item(position_a)
+    pion_elimine = None
 
     #Seulement autoriser les pions du joueur de tour d'etre deplacés dans une case vide
     if is_pion_jouable(damier, position_a, position_b, joueur):
@@ -123,12 +124,12 @@ def is_deplacement_diagonal_eliminant(damier, position_a, position_b, joueur):
                 
                 #Arreter la loupe quand on atteint la position de destination et autoriser le mouvement
                 if position_intermediaire == position_b and elimine != 1:
-                    return False
+                    return None
                 
                 #Autoriser le mouvement si la dame elimine exactement 1 pion de l'adversaire avant 
                 # d'arriver a la position de destination
                 if position_intermediaire == position_b and elimine == 1:
-                    return True
+                    return pion_elimine
                 
                 #Continuer a verifier la case suivante si la case actuelle est vide
                 elif pion_potentiel_intermediaire == None:
@@ -138,9 +139,10 @@ def is_deplacement_diagonal_eliminant(damier, position_a, position_b, joueur):
                 # la position de destination 
                 elif pion_potentiel_intermediaire.get_couleur() != joueur.get_couleur():
                     elimine += 1
+                    pion_elimine = pion_potentiel_intermediaire
                     continue
                 
-    return False
+    return pion_elimine
 
 
 def is_deplacement_autorise(damier, position_a, position_b, joueur):
@@ -167,36 +169,42 @@ def get_gain(damier, position_a, position_b, joueur):
     """Definir les conditions pour obtenir un point, apres avoir eliminer un pion de l'adversaire"""
     if is_deplacement_eliminant(damier, position_a, position_b, joueur):
         return 1
-    elif is_deplacement_diagonal_eliminant(damier, position_a, position_b, joueur):
+    elif get_pion_elimine_in_deplacement_diagonal(damier, position_a, position_b, joueur):
         return 1
     
     return 0
 
 
-def add_node(node_final, position):
+def add_node(damier, node_final, position, couleur):
     """Ajouter une section a un parcours"""
     profondeur_new = node_final.get_profondeur() + 1
-    node_final_new = node.Node(position, profondeur_new)
+    is_dame = False
+    if node_final.is_dame() or devient_dame(damier, position, couleur):
+        is_dame = True
+    node_final_new = node.Node(position, profondeur_new, is_dame)
     node_final_new.set_precedent(node)
     return node_final_new
 
 
-def get_pion_elimine(position_a, position_b):
+def get_pion_elimine(damier, node_a, node_b, joueur):
     """Obtenir la position du pion elimine"""
-    ligne_elimine = (position_a[0] + position_b[0]) / 2
-    colonne_elimine = (position_a[1] + position_b[1]) / 2
-    position_elimine = (ligne_elimine, colonne_elimine)
+    if not node_a.is_dame() and not node_b.is_dame():
+        ligne_elimine = (node_a.get_position()[0] + node_b.get_position()[0]) / 2
+        colonne_elimine = (node_a.get_position()[1] + node_b.get_position()[1]) / 2
+        position_elimine = (ligne_elimine, colonne_elimine)
+    else:
+        position_elimine = get_pion_elimine_in_deplacement_diagonal(damier, node_a.get_position(), node_b.get_position(), joueur)
     return position_elimine
 
-def is_parcours_possible(node_final):
+def is_parcours_possible(damier, node_final, joueur):
     """Verifier qu'une section du parcours ne se repete pas"""
     node_a = node_final
     node_b = node_final.get_precedent()
-    pion_intermediaire = get_pion_elimine(node_a.get_position(), node_b.get_position())
+    pion_intermediaire = get_pion_elimine(damier, node_a.get_position(), node_b.get_position(), joueur)
 
     node_intermediaire = node_b
     while node_intermediaire.get_precedent():
-        pion_intermediaire_a_verifier = get_pion_elimine(node_intermediaire.get_position(), node_intermediaire.get_precedent().get_position())
+        pion_intermediaire_a_verifier = get_pion_elimine(damier, node_intermediaire, node_intermediaire.get_precedent(), joueur)
         if pion_intermediaire_a_verifier == pion_intermediaire:
             return False
         node_intermediaire = node_intermediaire.get_precedent()
@@ -225,7 +233,7 @@ def get_gains_possibles(damier, joueur):
 def get_deplacements_autorises(damier, position_a, joueur):
     """Determiner tous les deplacements autorisés"""
     
-    root_node = node.Node(position_a, 0)
+    root_node = node.Node(position_a, 0, damier.get_item(position_a).isdame())
     liste_destinations = []
     liste_destinations_potentielles_simples = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
     liste_destinations_potentielles_eliminant = [(2, 2), (2, -2), (-2, 2), (-2, -2)]
@@ -238,31 +246,36 @@ def get_deplacements_autorises(damier, position_a, joueur):
         colonne_candidat = position_a[1] + position[1]
         position_candidat = (ligne_candidat, colonne_candidat)
         if is_deplacement_autorise(damier, position_a, position_candidat, joueur):
-            final_node = add_node(root_node, position_candidat)
+            final_node = add_node(damier, root_node, position_candidat, joueur.get_couleur())
             liste_parcours_testes.append(final_node)
 
     #Verifier les possibilites de deplacements eliminants (deplacement en 2). Apres chaque deplacement, 
     # on verifie les possibilites de deplacement eliminant additionnel
-    while len(liste_parcours_a_tester) != 0:
-        node_teste = liste_parcours_a_tester[-1]
-        liste_parcours_a_tester = liste_parcours_a_tester[:-1]
-        ajout = False
-        for position in liste_destinations_potentielles_eliminant:
-            ligne_candidat = node_teste.get_position()[0] + position[0]
-            colonne_candidat = node_teste.get_position()[1] + position[1]
-            position_candidat = (ligne_candidat, colonne_candidat)
-            node_candidat = add_node(node_teste, position_candidat)
+    if not damier.get_item(position_a).is_dame():
+        while len(liste_parcours_a_tester) != 0:
+            node_teste = liste_parcours_a_tester[-1]
+            liste_parcours_a_tester = liste_parcours_a_tester[:-1]
+            ajout = False
+            for position in liste_destinations_potentielles_eliminant:
+                ligne_candidat = node_teste.get_position()[0] + position[0]
+                colonne_candidat = node_teste.get_position()[1] + position[1]
+                position_candidat = (ligne_candidat, colonne_candidat)
+                node_candidat = add_node(damier, node_teste, position_candidat, joueur.get_couleur())
 
-            if is_deplacement_autorise(damier, node_teste.get_position(), position_candidat, joueur) and is_parcours_possible(node_candidat):
-                liste_parcours_a_tester.append(node_candidat)
-                ajout = True
-            
-        if ajout: 
-            liste_parcours_testes.append(node_teste)
+                if is_deplacement_autorise(damier, node_teste.get_position(), position_candidat, joueur) and is_parcours_possible(damier, node_candidat, joueur):
+                    liste_parcours_a_tester.append(node_candidat)
+                    ajout = True
+                
+            if ajout: 
+                liste_parcours_testes.append(node_teste)
 
     #Verifier les possibilites de deplacements eliminants pour dame. Apres chaque deplacement, 
     # on verifie les possibilites de deplacement eliminant additionnel
-
+    else:
+        while len(liste_parcours_a_tester) != 0:
+            node_teste = liste_parcours_a_tester[-1]
+            liste_parcours_a_tester = liste_parcours_a_tester[:-1]
+            ajout = False
 
     #Recuperer les parcours les plus longs
     liste_destinations = get_plus_longs_parcours(liste_parcours_testes)
@@ -270,11 +283,17 @@ def get_deplacements_autorises(damier, position_a, joueur):
             
 
 
-def devient_dame(damier, position):
+def devient_dame(damier, position, couleur = None):
     """Definir la condition pour qu'un pion devienne une dame"""
     pion = damier.get_item(position)
 
     #Si le pion blanc est sur la 1ere ligne du blanc, alors il devient une dame. 
     #De meme pour le pion noir, s'il est sur la 1ere ligne du blanc, alors il devient une dame.
-    if (pion.get_couleur() == "blanc" and position[0] == 0) or (pion.get_couleur() == "noir" and position[0] == 9):
-        pion.set_dame()
+    if not pion and couleur:
+        if (couleur == "blanc" and position[0] == 0) or (couleur == "noir" and position[0] == 9):
+            pion.set_dame()
+    elif pion:
+        if (pion.get_couleur() == "blanc" and position[0] == 0) or (pion.get_couleur() == "noir" and position[0] == 9):
+            pion.set_dame()
+    else: 
+        NotImplemented

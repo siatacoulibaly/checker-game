@@ -2,10 +2,11 @@
 
 
 class Node:
-    def __init__(self, position, profondeur):
+    def __init__(self, position, profondeur, dame):
         self._position = position
         self.precedent = None
         self._profondeur = profondeur
+        self.dame = dame
 
 
     def __eq__(self, other_node):
@@ -27,11 +28,15 @@ class Node:
     def get_precedent(self):
         return self.precedent
     
-    
     def get_profondeur(self):
         return self._profondeur
     
+    def is_dame(self):
+        return self.dame
     
     def set_precedent(self, node_precedent):
         self.precedent = node_precedent
+
+    def set_dame(self, dame):
+        self.dame = dame
     
